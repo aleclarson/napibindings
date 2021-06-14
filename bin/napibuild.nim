@@ -2,9 +2,9 @@ import json, docopt, os
 
 
 const doc = """
-NodeBuild.
+NapiBuild.
 Usage:
-  nodebuild <projectfile> [options]
+  napibuild <projectfile> [options]
 
 Options:
   -C          do not recompile projectfile
