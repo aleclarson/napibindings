@@ -334,7 +334,7 @@ proc callFunction*(fn: napi_value, args: openarray[napi_value] = [], this = %emp
   proc napi_call_function(env: napi_env, recv, fn: napi_value, argc: cint, argv, res: ptr napi_value): int {.header:"<node_api.h>".}
   assessStatus napi_call_function(`env$`, this, fn,  cint args.len, cast[ptr napi_value](args.toUnchecked()), addr result)
 
-macro getIdentStr*(n: untyped): string = $ident(n)
+# macro getIdentStr*(n: untyped): string = $ident(n)
 
 
 template fn*(paramCt: int, name, cushy: untyped): untyped {.dirty.} =
@@ -354,7 +354,7 @@ template fn*(paramCt: int, name, cushy: untyped): untyped {.dirty.} =
       dealloc(`argv$`)
       cushy
 
-    name = createFn(`env$`, getIdentStr(name), `wrapper$`)
+    name = createFn(`env$`, name.strVal, `wrapper$`)
 
 
 template registerFn*(exports: Module, paramCt: int, name: string, cushy: untyped): untyped {.dirty.}=
