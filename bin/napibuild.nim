@@ -12,7 +12,7 @@ Options:
 """
 let args = docopt(doc)
 
-var 
+var
   projectfile = $args["<projectfile>"]
   project = splitFile(projectfile)
   nimbase = (findExe("nim") /../ "" /../ "lib")

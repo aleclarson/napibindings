@@ -47,7 +47,7 @@ type NapiStatus* {.importc: "napi_status", header:"<node_api.h>".} = enum
 
 
 proc assessStatus*(status: int) {.raises: [NapiStatusError].} =
-  ##Asserts that a call returns correctly; 
+  ##Asserts that a call returns correctly;
   if status != 0:
     raise newException(NapiStatusError, "NAPI call returned non-zero status (" & $status & ": " & $NapiStatus(status) & ")")
 
@@ -193,7 +193,7 @@ proc getStr*(n: napi_value, bufsize: int = 40): string =
   ##
   ##Maximum return string length is equal to ``bufsize``
   proc napi_get_value_string_utf8(e: napi_env, v: napi_value, buf: cstring, bufsize: csize, res: ptr csize): int {.header: "<node_api.h>".}
-  var 
+  var
     buf = cast[cstring](alloc(bufsize))
     res: csize
 
@@ -204,7 +204,7 @@ proc getStr*(n: napi_value, default: string, bufsize: int = 40): string =
   ##Retrieves utf8 encoded value from node; returns default on failure
   ##Maximum return string length is equal to ``bufsize``
   proc napi_get_value_string_utf8(e: napi_env, v: napi_value, buf: cstring, bufsize: csize, res: ptr csize): int {.header: "<node_api.h>".}
-  var 
+  var
     buf = cast[cstring](alloc(bufsize))
     res: csize
 
@@ -342,7 +342,7 @@ template fn*(paramCt: int, name, cushy: untyped): untyped {.dirty.} =
   block:
     proc napi_get_cb_info(env: napi_env, cbinfo: pointer, argc: ptr csize, argv: pointer, this: napi_value, data: pointer = nil): int {.header:"<node_api.h>".}
     proc `wrapper$`(environment: napi_env, info: pointer): napi_value {.cdecl.} =
-      var 
+      var
         `argv$` = cast[ptr UncheckedArray[napi_value]](alloc(paramCt * sizeof(napi_value)))
         argc: csize = paramCt
         this: napi_value
@@ -361,7 +361,7 @@ template registerFn*(exports: Module, paramCt: int, name: string, cushy: untyped
   block:
     proc napi_get_cb_info(env: napi_env, cbinfo: pointer, argc: ptr csize, argv: pointer, this: napi_value, data: pointer = nil): int {.header:"<node_api.h>".}
     proc `wrapper$`(environment: napi_env, info: pointer): napi_value {.cdecl.} =
-      var 
+      var
         `argv$` = cast[ptr UncheckedArray[napi_value]](alloc(paramCt * sizeof(napi_value)))
         argc: csize = paramCt
         this: napi_value
