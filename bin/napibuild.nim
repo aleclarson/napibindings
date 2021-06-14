@@ -15,7 +15,7 @@ let args = docopt(doc)
 var
   projectfile = $args["<projectfile>"]
   project = splitFile(projectfile)
-  nimbase = (findExe("nim") /../ "" /../ "lib")
+  nimbase = getEnv("HOME") & "/.choosenim/toolchains/nim-1.4.8/lib"
   nimcache = project.dir / "nimcache"#$args["<nimcache>"]
   target = %* { "target_name": project.name }
   gyp = %* { "targets": [target] }
