@@ -1,4 +1,4 @@
-import json, docopt, os, sequtils
+import json, docopt, os
 
 
 const doc = """
