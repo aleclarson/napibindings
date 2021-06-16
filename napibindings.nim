@@ -238,6 +238,11 @@ proc setProperty*(obj: napi_value, key: string, value: napi_value) {.raises: [Va
   proc napi_set_named_property(env: napi_env, obj: napi_value, key: cstring, value: napi_value): int{.header: "<node_api.h>".}
   assessStatus napi_set_named_property(`env$`, obj, key, value)
 
+# proc setPrototype*(obj: napi_value, proto: napi_value) =
+#   napi_get_global(env, addr global)
+#   napi_get_named_property(env, global, "Object", addr global_object)
+#   napi_get_named_property(env, global_object, "setPrototypeOf", addr set_proto)
+
 proc `[]`*(obj: napi_value, key: string): napi_value =
   ##Alias for ``getProperty``, raises exception
   obj.getProperty(key)
@@ -334,27 +339,27 @@ proc callFunction*(fn: napi_value, args: openarray[napi_value] = [], this = %emp
   proc napi_call_function(env: napi_env, recv, fn: napi_value, argc: cint, argv, res: ptr napi_value): int {.header:"<node_api.h>".}
   assessStatus napi_call_function(`env$`, this, fn,  cint args.len, cast[ptr napi_value](args.toUnchecked()), addr result)
 
-# macro getIdentStr*(n: untyped): string = $ident(n)
+macro getIdentStr*(n: untyped): string = newStrLitNode(n.strVal)
 
 
 template fn*(paramCt: int, name, cushy: untyped): untyped {.dirty.} =
   var name {.inject.}: napi_value
   block:
     proc napi_get_cb_info(env: napi_env, cbinfo: pointer, argc: ptr csize, argv: pointer, this: napi_value, data: pointer = nil): int {.header:"<node_api.h>".}
-    proc `wrapper$`(environment: napi_env, info: pointer): napi_value {.cdecl.} =
+    proc ncbk(environment: napi_env, info: pointer): napi_value {.cdecl.} =
       var
         `argv$` = cast[ptr UncheckedArray[napi_value]](alloc(paramCt * sizeof(napi_value)))
         argc: csize = paramCt
         this: napi_value
         args = newSeq[napi_value]()
       `env$` = environment
+
       assessStatus napi_get_cb_info(environment, info, addr argc, `argv$`, addr this)
       for i in 0..<min(argc, paramCt):
         args.add(`argv$`[][i])
       dealloc(`argv$`)
       cushy
-
-    name = createFn(`env$`, name.strVal, `wrapper$`)
+    name = createFn(`env$`, getIdentStr(name), ncbk)
 
 
 template registerFn*(exports: Module, paramCt: int, name: string, cushy: untyped): untyped {.dirty.}=

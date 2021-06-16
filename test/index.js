@@ -1,6 +1,8 @@
 const assert = require('assert')
 const addon = require('bindings')('main')
 
+console.log(addon.createObject())
+
 assert.equal(addon.hello, "hello world");
 assert.equal(addon.addNums(3, 3, 3), 9);
 assert.deepEqual(addon.createArray('jim', 'bob', 3), ['jim', 'bob', 3])
