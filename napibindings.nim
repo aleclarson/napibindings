@@ -135,14 +135,14 @@ proc create(env: napi_env, v: napi_value): napi_value = v
 proc create*[T](n: Module, t: T): napi_value =
   n.env.create(t)
 
-proc createExternal*(data: any): napi_value =
+proc createExternal*(data: ptr): napi_value =
   proc napi_create_external(e: napi_env, data: pointer, finalize_cb: napi_finalize, finalize_hint: pointer, res: pointer): int{.header: "<node_api.h>".}
   assessStatus napi_create_external(`env$`, data, nil, nil, addr result)
 
 proc kind*(val: napi_value): NapiKind =
   kind(`env$`, val)
 
-proc getExternal*(n: napi_value): any =
+proc getExternal*(n: napi_value): ptr =
   proc napi_get_value_external(e: napi_env, v: napi_value, res: pointer): int{.header: "<node_api.h>".}
   assessStatus napi_get_value_external(`env$`, n, addr result)
 
