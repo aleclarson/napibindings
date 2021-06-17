@@ -59,7 +59,7 @@ type Module* = ref object
   env*: napi_env
   descriptors: seq[napi_property_descriptor]
 
-import ./utils
+import ./napibindings/utils
 
 
 proc newNodeValue*(val: napi_value, env: napi_env): Module =
