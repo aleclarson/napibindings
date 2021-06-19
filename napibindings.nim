@@ -139,6 +139,10 @@ proc createExternal*(data: pointer): napi_value =
   proc napi_create_external(e: napi_env, data: pointer, finalize_cb: napi_finalize, finalize_hint: pointer, res: pointer): int{.header: "<node_api.h>".}
   assessStatus napi_create_external(`env$`, data, nil, nil, addr result)
 
+proc createExternal*(data: pointer, finalize_cb: napi_finalize): napi_value =
+  proc napi_create_external(e: napi_env, data: pointer, finalize_cb: napi_finalize, finalize_hint: pointer, res: pointer): int{.header: "<node_api.h>".}
+  assessStatus napi_create_external(`env$`, data, finalize_cb, nil, addr result)
+
 proc kind*(val: napi_value): NapiKind =
   kind(`env$`, val)
 
