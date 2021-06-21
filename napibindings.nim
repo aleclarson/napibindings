@@ -127,7 +127,7 @@ proc create[T: int | uint | string](env: napi_env, a: openarray[T]): napi_value 
 proc create[T: int | uint | string](env: napi_env, a: openarray[(string, T)]): napi_value =
   var properties = newSeq[(string, napi_value)]()
   for prop in a: properties.add((prop[0], create(prop[1])))
-  env.create(a)
+  env.create(properties)
 
 proc createFn*(env: napi_env, fname: string, cb: napi_callback): napi_value =
   proc napi_create_function(env: napi_env, utf8name: cstring, length: csize_t, cb: napi_callback, data: pointer, res: napi_value): int {.header:"<node_api.h>".}
