@@ -382,13 +382,40 @@ proc register*[T: int | uint | string | napi_value](obj: Module, name: string, v
 proc register*(obj: Module, name: string, cb: napi_callback) =
   obj.registerBase(name, createFn(obj.env, name, cb), 0)
 
+type NapiPrimitive = napi_value | int32 | int64 | uint32 | uint64 | float64 | bool | string
 
-proc `%`*[T](t: T): napi_value =
+type NapiArray = concept x
+  x[0] is NapiPrimitive
+
+type NapiObject = concept x
+  x[0] is (string, NapiPrimitive)
+
+type NapiValue = NapiPrimitive | NapiArray | NapiObject
+
+proc napiCreate*[T: NapiValue](t: T): napi_value =
   `env$`.create(t)
+
+proc toNapiValue(x: NimNode): NimNode {.compiletime.} =
+  case x.kind
+  of nnkBracket:
+    var brackets = newNimNode(nnkBracket)
+    for i in 0..<x.len: brackets.add(toNapiValue(x[i]))
+    newCall("napiCreate", brackets)
+  of nnkTableConstr:
+    var table = newNimNode(nnkTableConstr)
+    for i in 0..<x.len:
+      x[i].expectKind nnkExprColonExpr
+      table.add newTree(nnkExprColonExpr, x[i][0], toNapiValue(x[i][1]))
+    newCall("napiCreate", table)
+  else:
+    newCall("napiCreate", x)
+
+macro `\`*(x: untyped): untyped =
+  return toNapiValue(x)
 
 const emptyArr: array[0, (string, napi_value)] = []
 
-proc callFunction*(fn: napi_value, args: openarray[napi_value] = [], this = %emptyArr): napi_value =
+proc callFunction*(fn: napi_value, args: openarray[napi_value] = [], this = \emptyArr): napi_value =
   proc napi_call_function(env: napi_env, recv, fn: napi_value, argc: cint, argv, res: ptr napi_value): int {.header:"<node_api.h>".}
   assessStatus napi_call_function(`env$`, this, fn,  cint args.len, cast[ptr napi_value](args.toUnchecked()), addr result)
 
@@ -438,33 +465,6 @@ proc defineProperties*(obj: Module) =
   proc napi_define_properties(env: napi_env, val: napi_value, property_count: csize, properties: ptr napi_property_descriptor): int {.header:"<node_api.h>".}
   assessStatus napi_define_properties(obj.env, obj.val, obj.descriptors.len, cast[ptr napi_property_descriptor](obj.descriptors.toUnchecked))
 
-
-
-
-
-
-
-
-proc napiCreate*[T](t: T): napi_value =
-  `env$`.create(t)
-
-proc toNapiValue(x: NimNode): NimNode {.compiletime.} =
-  case x.kind
-  of nnkBracket:
-    var brackets = newNimNode(nnkBracket)
-    for i in 0..<x.len: brackets.add(toNapiValue(x[i]))
-    newCall("napiCreate", brackets)
-  of nnkTableConstr:
-    var table = newNimNode(nnkTableConstr)
-    for i in 0..<x.len:
-      x[i].expectKind nnkExprColonExpr
-      table.add newTree(nnkExprColonExpr, x[i][0], toNapiValue(x[i][1]))
-    newCall("napiCreate", table)
-  else:
-    newCall("napiCreate", x)
-
-macro `%*`*(x: untyped): untyped =
-  return toNapiValue(x)
 
 macro init*(initHook: proc(exports: Module)) =
   ##Bootstraps module; use by calling ``register`` to add properties to ``exports``
