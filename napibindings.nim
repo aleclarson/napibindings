@@ -96,6 +96,10 @@ proc create(env: napi_env, n: float64): napi_value =
   proc napi_create_double(env: napi_env, n: float64, val: ptr napi_value): int {.header:"<node_api.h>".}
   assessStatus ( napi_create_double(env, n, addr result) )
 
+proc create(env: napi_env, b: bool): napi_value =
+  proc napi_get_boolean(env: napi_env, b: bool, val: ptr napi_value): int {.header:"<node_api.h>".}
+  assessStatus ( napi_get_boolean(env, b, addr result) )
+
 proc create(env: napi_env, s: string): napi_value =
   proc napi_create_string_utf8(env: napi_env, str: cstring, length: csize, val: ptr napi_value): int {.header:"<node_api.h>".}
   assessStatus ( napi_create_string_utf8(env, s, s.len, addr result) )
