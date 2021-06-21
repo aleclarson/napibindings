@@ -148,10 +148,10 @@ proc onFinalize(e: napi_env, data: pointer, hint: pointer) {.cdecl.} =
   finalizePtr[](data)
   dealloc(finalizePtr)
 
-proc createExternal*(data: pointer, finalize_cb: proc (data: pointer) {.nimcall.}): napi_value =
+proc createExternal*(data: pointer, finalize_cb: proc (data: pointer)): napi_value =
   proc napi_create_external(e: napi_env, data: pointer, finalize_cb: napi_finalize, finalize_hint: pointer, res: pointer): int{.header: "<node_api.h>".}
 
-  var finalizePtr = create(proc (data: pointer) {.nimcall.})
+  var finalizePtr = create(proc (data: pointer))
   finalizePtr[] = finalize_cb
   assessStatus napi_create_external(`env$`, data, onFinalize, finalizePtr, addr result)
 
