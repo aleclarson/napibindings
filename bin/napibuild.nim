@@ -17,9 +17,16 @@ var
   project = splitFile(projectfile)
   nimbase = getEnv("HOME") & "/.choosenim/toolchains/nim-1.4.8/lib"
   nimcache = project.dir / "nimcache"#$args["<nimcache>"]
-  target = %* { "target_name": project.name }
+
+var
+  bindingPath = project.dir / "binding.gyp"
+  bindingExists = fileExists bindingPath
+  target =
+    if bindingExists: parseJson readFile bindingPath
+    else: %* { "target_name": project.name }
   gyp = %* { "targets": [target] }
 
+echo "binding exists: " & bindingExists.repr
 
 template assess(name: string, cmd: string) =
   var status = execShellCmd(cmd)
@@ -31,12 +38,14 @@ if not args["-C"]:
   assess "nim c", "nim c --nimcache:" & nimcache & " " & releaseFlag & "--compileOnly --noMain " & projectfile
 
 
-target["include_dirs"] = %[ nimbase ]
 target["cflags"] = %["-w"]
 if args["-r"]:
   target["cflags"].add(%"-O3")
   target["cflags"].add(%"-fno-strict-aliasing")
-target["linkflags"] = %["-ldl"]
+
+if not bindingExists:
+  target["include_dirs"] = %[ nimbase ]
+  target["linkflags"] = %["-ldl"]
 
 
 var compiledpf = (projectfile).changeFileExt(".c")
@@ -46,7 +55,7 @@ for targetobj in parsejson(readfile(nimcache / (project.name & ".json")))["link"
   target["sources"].add(% ("nimcache" / targetobj.getstr.splitFile.name))
 
 
-writeFile(project.dir / "binding.gyp", gyp.pretty)
+writeFile(bindingPath, gyp.pretty)
 
 
 var gypflags = "--directory=" & project.dir
