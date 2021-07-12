@@ -21,12 +21,15 @@ var
 var
   bindingPath = project.dir / "binding.gyp"
   bindingExists = fileExists bindingPath
-  target =
-    if bindingExists: parseJson readFile bindingPath
-    else: %* { "target_name": project.name }
-  gyp = %* { "targets": [target] }
 
-echo "binding exists: " & bindingExists.repr
+var gyp: JsonNode
+var target: JsonNode
+if bindingExists:
+  gyp = parseJson readFile bindingPath
+  target = gyp["targets"][0]
+else:
+  target = %* { "target_name": project.name }
+  gyp = %* { "targets": [target] }
 
 template assess(name: string, cmd: string) =
   var status = execShellCmd(cmd)
@@ -38,10 +41,24 @@ if not args["-C"]:
   assess "nim c", "nim c --nimcache:" & nimcache & " " & releaseFlag & "--compileOnly --noMain " & projectfile
 
 
-target["cflags"] = %["-w"]
+proc contains_string(node: JsonNode, str: string): bool =
+  for elem in node.elems:
+    if elem.kind == JString and elem.str == str:
+      return true
+
+proc add_flag(node: JsonNode, flag: string) =
+  if not node.contains_string flag:
+    node.add %flag
+
+var cflags = target["cflags"]
+if cflags == nil:
+  cflags = %[]
+  target["cflags"] = cflags
+
+cflags.add_flag "-w"
 if args["-r"]:
-  target["cflags"].add(%"-O3")
-  target["cflags"].add(%"-fno-strict-aliasing")
+  cflags.add_flag "-O3"
+  cflags.add_flag "-fno-strict-aliasing"
 
 if not bindingExists:
   target["include_dirs"] = %[ nimbase ]
