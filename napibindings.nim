@@ -1,12 +1,12 @@
 import macros
 
-type napi_env* = pointer
+type napi_env* = distinct pointer
 
 var `env$`*: napi_env = nil
 ##Global environment variable; state maintained by various hooks; used internally
 
 
-type napi_value* = pointer
+type napi_value* = distinct pointer
 type napi_callback* = proc(environment: napi_env, info: pointer): napi_value {.cdecl.}
 type napi_finalize* = proc(environment: napi_env, data: pointer, hint: pointer): void {.cdecl.}
 type napi_property_attributes* = int
@@ -131,7 +131,7 @@ proc create[T: int | uint | string](env: napi_env, a: openarray[(string, T)]): n
   env.create(properties)
 
 proc createFn*(env: napi_env, fname: string, cb: napi_callback): napi_value =
-  proc napi_create_function(env: napi_env, utf8name: cstring, length: csize_t, cb: napi_callback, data: pointer, res: napi_value): int {.header:"<node_api.h>".}
+  proc napi_create_function(env: napi_env, utf8name: cstring, length: csize_t, cb: napi_callback, data: pointer, res: ptr napi_value): int {.header:"<node_api.h>".}
   assessStatus( napi_create_function(env, fname.cstring, cast[csize_t](fname.len), cb, nil, addr result) )
 
 proc create(env: napi_env, v: napi_value): napi_value = v
@@ -344,12 +344,12 @@ iterator pairs*(obj: napi_value): tuple[name: string, value: napi_value] =
 
 proc null*: napi_value =
   ##Returns JavaScript ``null`` value
-  proc napi_get_null(env: napi_env, res: napi_value) {.header: "<node_api.h>".}
+  proc napi_get_null(env: napi_env, res: ptr napi_value) {.header: "<node_api.h>".}
   napi_get_null(`env$`, addr result)
 
 proc undefined*: napi_value =
   ##Returns JavaScript ``undefined`` value
-  proc napi_get_undefined(env: napi_env, res: napi_value) {.header: "<node_api.h>".}
+  proc napi_get_undefined(env: napi_env, res: ptr napi_value) {.header: "<node_api.h>".}
   napi_get_undefined(`env$`, addr result)
 
 
@@ -429,7 +429,7 @@ macro getIdentStr*(n: untyped): string = newStrLitNode(n.strVal)
 template fn*(paramCt: int, name, cushy: untyped): untyped {.dirty.} =
   var name {.inject.}: napi_value
   block:
-    proc napi_get_cb_info(env: napi_env, cbinfo: pointer, argc: ptr csize_t, argv: pointer, this: napi_value, data: pointer = nil): int {.header:"<node_api.h>".}
+    proc napi_get_cb_info(env: napi_env, cbinfo: pointer, argc: ptr csize_t, argv: pointer, this: ptr napi_value, data: pointer = nil): int {.header:"<node_api.h>".}
     proc `wrapper$`(environment: napi_env, info: pointer): napi_value {.cdecl.} =
       var
         `argv$` = cast[ptr UncheckedArray[napi_value]](alloc(paramCt * sizeof(napi_value)))
@@ -451,7 +451,7 @@ template fn*(paramCt: int, name, cushy: untyped): untyped {.dirty.} =
 
 template registerFn*(exports: Module, paramCt: int, name: string, cushy: untyped): untyped {.dirty.}=
   block:
-    proc napi_get_cb_info(env: napi_env, cbinfo: pointer, argc: ptr csize, argv: pointer, this: napi_value, data: pointer = nil): int {.header:"<node_api.h>".}
+    proc napi_get_cb_info(env: napi_env, cbinfo: pointer, argc: ptr csize, argv: pointer, this: ptr napi_value, data: pointer = nil): int {.header:"<node_api.h>".}
     proc `wrapper$`(environment: napi_env, info: pointer): napi_value {.cdecl.} =
       var
         `argv$` = cast[ptr UncheckedArray[napi_value]](alloc(paramCt * sizeof(napi_value)))
