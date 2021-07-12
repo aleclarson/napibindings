@@ -15,7 +15,6 @@ let args = docopt(doc)
 var
   projectfile = $args["<projectfile>"]
   project = splitFile(projectfile)
-  nimbase = getEnv("HOME") & "/.choosenim/toolchains/nim-1.4.8/lib"
   nimcache = project.dir / "nimcache"#$args["<nimcache>"]
 
 var
@@ -61,7 +60,7 @@ if args["-r"]:
   cflags.add_flag "-fno-strict-aliasing"
 
 if not bindingExists:
-  target["include_dirs"] = %[ nimbase ]
+  target["include_dirs"] = %["$$HOME/.choosenim/toolchains/nim-1.4.8/lib"]
   target["linkflags"] = %["-ldl"]
 
 
