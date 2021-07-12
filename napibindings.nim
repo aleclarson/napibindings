@@ -6,6 +6,7 @@ var `env$`*: napi_env = nil
 ##Global environment variable; state maintained by various hooks; used internally
 
 
+type napi_ref* = distinct pointer
 type napi_value* = distinct pointer
 type napi_callback* = proc(environment: napi_env, info: pointer): napi_value {.cdecl.}
 type napi_finalize* = proc(environment: napi_env, data: pointer, hint: pointer): void {.cdecl.}
@@ -484,6 +485,16 @@ proc objectCreate*[I](proto: napi_value, props: array[I, (string, napi_value)]):
   result = global["Object"]["create"].callFunction [proto]
   for (key, value) in props:
     result[key] = value
+
+proc toRef*(obj: napi_value): napi_ref =
+  proc napi_create_reference(env: napi_env, value: napi_value, initial_refcount: uint32, res: ptr napi_ref): int{.header: "<node_api.h>".}
+  assessStatus napi_create_reference(`env$`, obj, 1, addr result)
+
+proc fromRef*(r: napi_ref): napi_value =
+  proc napi_get_reference_value(env: napi_env, r: napi_ref, res: ptr napi_value): int{.header: "<node_api.h>".}
+  assessStatus napi_get_reference_value(`env$`, r, addr result)
+
+
 
 macro init*(initHook: proc(exports: Module)) =
   ##Bootstraps module; use by calling ``register`` to add properties to ``exports``
