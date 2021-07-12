@@ -274,11 +274,6 @@ proc setProperty*(obj: napi_value, key: string, value: napi_value) {.raises: [Va
   proc napi_set_named_property(env: napi_env, obj: napi_value, key: cstring, value: napi_value): int{.header: "<node_api.h>".}
   assessStatus napi_set_named_property(`env$`, obj, key, value)
 
-# proc setPrototype*(obj: napi_value, proto: napi_value) =
-#   napi_get_global(env, addr global)
-#   napi_get_named_property(env, global, "Object", addr global_object)
-#   napi_get_named_property(env, global_object, "setPrototypeOf", addr set_proto)
-
 proc `[]`*(obj: napi_value, key: string): napi_value =
   ##Alias for ``getProperty``, raises exception
   obj.getProperty(key)
@@ -473,6 +468,13 @@ proc defineProperties*(obj: Module) =
   proc napi_define_properties(env: napi_env, val: napi_value, property_count: csize, properties: ptr napi_property_descriptor): int {.header:"<node_api.h>".}
   assessStatus napi_define_properties(obj.env, obj.val, obj.descriptors.len, cast[ptr napi_property_descriptor](obj.descriptors.toUnchecked))
 
+proc objectCreate*[I](proto: napi_value, props: array[I, (string, napi_value)]): napi_value =
+  proc napi_get_global(env: napi_env, res: ptr napi_value): int{.header: "<node_api.h>".}
+  var global: napi_value
+  assessStatus napi_get_global(`env$`, addr global)
+  result = global["Object"]["create"].callFunction [proto]
+  for (key, value) in props:
+    result[key] = value
 
 macro init*(initHook: proc(exports: Module)) =
   ##Bootstraps module; use by calling ``register`` to add properties to ``exports``
