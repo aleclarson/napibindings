@@ -241,10 +241,15 @@ proc getStr*(n: napi_value, default: string, bufsize: int = 40): string =
     result = ($buf)[0..res-1]
   except: result = default
 
+template assertObject(value: napi_value) =
+  case value.kind
+    of napi_object: discard
+    of napi_function: discard
+    else: raise newException(ValueError, "value is not an object")
+
 proc hasProperty*(obj: napi_value, key: string): bool {.raises: [ValueError, NapiStatusError].} =
   ##Checks whether or not ``obj`` has a property ``key``; Panics if ``obj`` is not an object
-  if kind(obj) != napi_object: raise newException(ValueError, "value is not an object")
-
+  assertObject(obj)
   proc napi_has_named_property(env: napi_env, obj: napi_value, key: cstring, res: ptr bool): int {.header:"<node_api.h>".}
   assessStatus napi_has_named_property(`env$`, obj, (key), addr result)
 
@@ -265,7 +270,7 @@ proc getProperty*(obj: napi_value, key: string, default: napi_value): napi_value
 
 proc setProperty*(obj: napi_value, key: string, value: napi_value) {.raises: [ValueError, NapiStatusError].}=
   ##Sets property ``key`` in ``obj`` to ``value``; raises exception if ``obj`` is not an object
-  if kind(obj) != napi_object: raise newException(ValueError, "value is not an object")
+  assertObject(obj)
   proc napi_set_named_property(env: napi_env, obj: napi_value, key: cstring, value: napi_value): int{.header: "<node_api.h>".}
   assessStatus napi_set_named_property(`env$`, obj, key, value)
 
@@ -287,14 +292,17 @@ proc isArray*(obj: napi_value): bool =
   proc napi_is_array(env: napi_env, value: napi_value, res: ptr bool): int {.header: "<node_api.h>".}
   assessStatus napi_is_array(`env$`, obj, addr result)
 
-proc getArrayLength*(obj: napi_value): int =
+template assertArray(obj: napi_value) =
   if not isArray(obj): raise newException(ValueError, "value is not an array")
+
+proc getArrayLength*(obj: napi_value): int =
+  assertArray(obj)
   proc napi_get_array_length(env: napi_env, value: napi_value, res: ptr int): int {.header: "<node_api.h>".}
   assessStatus napi_get_array_length(`env$`, obj, addr result)
 
 proc hasElement*(obj: napi_value, index: int): bool =
   ##Checks whether element is contained in ``obj``; raises exception if ``obj`` is not an array
-  if not isArray(obj): raise newException(ValueError, "value is not an array")
+  assertArray(obj)
   proc napi_has_element(env: napi_env, obj: napi_value, index: uint32, res: ptr bool): int {.header: "<node_api.h>".}
   assessStatus napi_has_element(`env$`, obj, uint32 index, addr result)
 
@@ -310,7 +318,7 @@ proc getElement*(obj: napi_value, index: int, default: napi_value): napi_value =
 
 proc setElement*(obj: napi_value, index: int, value: napi_value) =
   ##Sets value at ``index``; raises exception if ``obj`` is not an array
-  if not isArray(obj): raise newException(ValueError, "value is not an array")
+  assertArray(obj)
   proc napi_set_element(env: napi_env, obj: napi_value, index: uint32, value: napi_value): int {.header: "<node_api.h>".}
   assessStatus napi_set_element(`env$`, obj, uint32 index, value)
 
