@@ -1,7 +1,5 @@
 import macros
 
-type NapiStatusError = object of Exception
-
 type napi_env* = pointer
 
 var `env$`*: napi_env = nil
@@ -46,11 +44,14 @@ type NapiStatus* {.importc: "napi_status", header:"<node_api.h>".} = enum
   napi_cancelled
   napi_status_last
 
+type NapiStatusError* = ref object of CatchableError
+  status*: NapiStatus
+
 
 proc assessStatus*(status: int) {.raises: [NapiStatusError].} =
   ##Asserts that a call returns correctly;
   if status != 0:
-    raise newException(NapiStatusError, "NAPI call returned non-zero status (" & $status & ": " & $NapiStatus(status) & ")")
+    raise NapiStatusError(msg: "NAPI call returned non-zero status", status: NapiStatus(status))
 
 
 
@@ -441,7 +442,10 @@ template fn*(paramCt: int, name, cushy: untyped): untyped {.dirty.} =
       for i in 0..<min(argc, paramCt):
         args.add(`argv$`[][i])
       dealloc(`argv$`)
-      cushy
+      try:
+        cushy
+      except NapiStatusError:
+        discard
     name = createFn(`env$`, getIdentStr(name), `wrapper$`)
 
 
@@ -460,7 +464,10 @@ template registerFn*(exports: Module, paramCt: int, name: string, cushy: untyped
       for i in 0..<min(argc, paramCt):
         args.add(`argv$`[][i])
       dealloc(`argv$`)
-      cushy
+      try:
+        cushy
+      except NapiStatusError:
+        discard
     exports.register(name, `wrapper$`)
 
 
