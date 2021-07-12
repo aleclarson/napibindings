@@ -475,10 +475,12 @@ proc defineProperties*(obj: Module) =
   proc napi_define_properties(env: napi_env, val: napi_value, property_count: csize, properties: ptr napi_property_descriptor): int {.header:"<node_api.h>".}
   assessStatus napi_define_properties(obj.env, obj.val, obj.descriptors.len, cast[ptr napi_property_descriptor](obj.descriptors.toUnchecked))
 
-proc objectCreate*[I](proto: napi_value, props: array[I, (string, napi_value)]): napi_value =
+proc napiGlobal*(): napi_value =
   proc napi_get_global(env: napi_env, res: ptr napi_value): int{.header: "<node_api.h>".}
-  var global: napi_value
-  assessStatus napi_get_global(`env$`, addr global)
+  assessStatus napi_get_global(`env$`, addr result)
+
+proc objectCreate*[I](proto: napi_value, props: array[I, (string, napi_value)]): napi_value =
+  let global = napiGlobal()
   result = global["Object"]["create"].callFunction [proto]
   for (key, value) in props:
     result[key] = value
