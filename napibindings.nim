@@ -157,6 +157,15 @@ proc createExternal*(data: pointer, finalize_cb: proc (data: pointer)): napi_val
   finalizePtr[] = finalize_cb
   assessStatus napi_create_external(`env$`, data, onFinalize, finalizePtr, addr result)
 
+proc createExternalRef*(data: ref): napi_value =
+  GC_ref(data)
+  return createExternal(
+    cast[pointer](data),
+    proc (_: pointer) =
+      GC_unref(data)
+  )
+
+
 proc kind*(val: napi_value): NapiKind =
   kind(`env$`, val)
 
