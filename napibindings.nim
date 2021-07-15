@@ -432,6 +432,22 @@ proc callFunction*(fn: napi_value, args: openarray[napi_value] = [], this = \emp
   proc napi_call_function(env: napi_env, recv, fn: napi_value, argc: cint, argv, res: ptr napi_value): int {.header:"<node_api.h>".}
   assessStatus napi_call_function(`env$`, this, fn,  cint args.len, cast[ptr napi_value](args.toUnchecked()), addr result)
 
+proc throwNapiError*(msg: string) =
+  proc napi_throw_error(env: napi_env, code, msg: cstring): int {.header:"<node_api.h>".}
+  discard napi_throw_error(`env$`, "".cstring, msg.cstring)
+
+proc propagateExceptionToJS*() =
+  let e = getCurrentException()
+  let frames = e.getStackTraceEntries()
+  var msg = e.msg
+  for i in countdown(frames.len - 2, 0):
+    let frame = frames[i]
+    msg = msg & "\n    at " &
+      $frame.procname & " (" &
+      $frame.filename & ":" &
+      $frame.line & ")"
+  throwNapiError msg
+
 macro getIdentStr*(n: untyped): string = newStrLitNode(n.strVal)
 
 
@@ -455,6 +471,8 @@ template fn*(paramCt: int, name, cushy: untyped): untyped {.dirty.} =
         cushy
       except NapiStatusError:
         discard
+      except:
+        propagateExceptionToJS()
     name = createFn(`env$`, getIdentStr(name), `wrapper$`)
 
 
@@ -477,6 +495,8 @@ template registerFn*(exports: Module, paramCt: int, name: string, cushy: untyped
         cushy
       except NapiStatusError:
         discard
+      except:
+        propagateExceptionToJS()
     exports.register(name, `wrapper$`)
 
 
