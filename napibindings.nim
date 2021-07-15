@@ -227,17 +227,16 @@ proc getBool*(n: napi_value, default: bool): bool =
   except: result = default
 
 
-proc getStr*(n: napi_value, bufsize: int = 40): string =
+proc getStr*(n: napi_value): string =
   ##Retrieves utf8 encoded value from node; raises exception on failure
   ##
   ##Maximum return string length is equal to ``bufsize``
   proc napi_get_value_string_utf8(e: napi_env, v: napi_value, buf: cstring, bufsize: csize, res: ptr csize): int {.header: "<node_api.h>".}
-  var
-    buf = cast[cstring](alloc(bufsize))
-    res: csize
-
-  assessStatus napi_get_value_string_utf8(`env$`, n, buf, bufsize, addr res)
-  return  ($buf)[0..res-1]
+  var bufsize: csize
+  assessStatus napi_get_value_string_utf8(`env$`, n, nil, 0, addr bufsize)
+  var buf = cast[cstring](alloc(bufsize + 1))
+  assessStatus napi_get_value_string_utf8(`env$`, n, buf, bufsize + 1, nil)
+  return $buf
 
 proc getStr*(n: napi_value, default: string, bufsize: int = 40): string =
   ##Retrieves utf8 encoded value from node; returns default on failure
