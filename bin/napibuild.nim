@@ -1,4 +1,4 @@
-import json, docopt, os
+import json, docopt, os, system
 
 
 const doc = """
@@ -59,8 +59,12 @@ if args["-r"]:
   cflags.add_flag "-O3"
   cflags.add_flag "-fno-strict-aliasing"
 
+let nimVersionTag =
+  if (system.NimMinor mod 2) == 0: system.NimVersion
+  else: "#devel"
+
 if not bindingExists:
-  target["include_dirs"] = %["$$HOME/.choosenim/toolchains/nim-1.4.8/lib"]
+  target["include_dirs"] = %["$$HOME/.choosenim/toolchains/nim-" & nimVersionTag & "/lib"]
   target["linkflags"] = %["-ldl"]
 
 
