@@ -78,6 +78,16 @@ var napi_default {.header:"<node_api.h>".}: napi_property_attributes
 
 
 
+proc null*: napi_value =
+  ##Returns JavaScript ``null`` value
+  proc napi_get_null(env: napi_env, res: ptr napi_value) {.header: "<node_api.h>".}
+  napi_get_null(`env$`, addr result)
+
+proc undefined*: napi_value =
+  ##Returns JavaScript ``undefined`` value
+  proc napi_get_undefined(env: napi_env, res: ptr napi_value) {.header: "<node_api.h>".}
+  napi_get_undefined(`env$`, addr result)
+
 proc create(env: napi_env, n: int32): napi_value =
   proc napi_create_int32(env: napi_env, n: cint, val: ptr napi_value): int {.header:"<node_api.h>".}
   assessStatus ( napi_create_int32(env, n, addr result) )
@@ -251,6 +261,17 @@ proc getStr*(n: napi_value, default: string, bufsize: int = 40): string =
     result = ($buf)[0..res-1]
   except: result = default
 
+type NapiFunction* = proc(args: varargs[napi_value]): napi_value
+
+proc getFun*(fn: napi_value): NapiFunction =
+  proc napi_call_function(e: napi_env, recv: napi_value, fn: napi_value, argc: csize, argv: ptr napi_value, res: ptr napi_value): int {.header"<node_api.h>".}
+  result = proc (args: varargs[napi_value]): napi_value =
+    let argc = args.len
+    # TODO: using unsafeAddr might be an implementation detail,
+    # so convert varargs into a seq to be safe
+    let argv = unsafeAddr args[0]
+    assessStatus napi_call_function(`env$`, undefined(), fn, cast[csize](argc), argv, addr result)
+
 template assertObject(value: napi_value) =
   case value.kind
     of napi_object: discard
@@ -350,17 +371,6 @@ iterator pairs*(obj: napi_value): tuple[name: string, value: napi_value] =
   while index < count:
     let name = names.getElement(index).getStr
     yield (name, obj.getProperty(name))
-
-proc null*: napi_value =
-  ##Returns JavaScript ``null`` value
-  proc napi_get_null(env: napi_env, res: ptr napi_value) {.header: "<node_api.h>".}
-  napi_get_null(`env$`, addr result)
-
-proc undefined*: napi_value =
-  ##Returns JavaScript ``undefined`` value
-  proc napi_get_undefined(env: napi_env, res: ptr napi_value) {.header: "<node_api.h>".}
-  napi_get_undefined(`env$`, addr result)
-
 
 
 
