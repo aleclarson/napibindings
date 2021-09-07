@@ -371,6 +371,7 @@ iterator pairs*(obj: napi_value): tuple[name: string, value: napi_value] =
   while index < count:
     let name = names.getElement(index).getStr
     yield (name, obj.getProperty(name))
+    inc index
 
 
 
