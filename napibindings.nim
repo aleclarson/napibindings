@@ -480,8 +480,6 @@ template fn*(paramCt: int, name, cushy: untyped): untyped {.dirty.} =
       dealloc(`argv$`)
       try:
         cushy
-      except NapiStatusError:
-        discard
       except:
         propagateExceptionToJS()
     name = createFn(`env$`, getIdentStr(name), `wrapper$`)
@@ -504,8 +502,6 @@ template registerFn*(exports: Module, paramCt: int, name: string, cushy: untyped
       dealloc(`argv$`)
       try:
         cushy
-      except NapiStatusError:
-        discard
       except:
         propagateExceptionToJS()
     exports.register(name, `wrapper$`)
